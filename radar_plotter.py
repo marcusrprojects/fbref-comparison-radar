@@ -17,10 +17,12 @@ from matplotlib import font_manager, cm
 from matplotlib.patches import Polygon
 from bs4 import BeautifulSoup
 import math
+from datetime import datetime # Needed for default filename timestamp
 from typing import List, Dict, Tuple, Any, Optional
 
 # --- Constants ---
 HTML_DIR_DEFAULT: str = './htmls'
+DEFAULT_OUTPUT_DIR: str = './data_viz' # Default directory for saving plots
 PER_90_SUFFIX: str = '/90'
 PERCENTAGE_CHAR: str = '%'
 NA_VALUE: str = 'N/A'
@@ -41,7 +43,9 @@ TITLE_LINE_LENGTH: int = 50
 
 
 # --- Core Functions ---
-
+# (load_html_file, extract_players_and_spans, get_data_stat,
+#  extract_stat, adjust_stats_by_nineties, add_line_breaks remain the same)
+# --- Paste the existing function definitions here ---
 def load_html_file(dir_path: str, file_name_base: str) -> str:
     """
     Loads HTML content from a file within the specified directory.
@@ -279,6 +283,8 @@ def add_line_breaks(text: str, line_length: int = TITLE_LINE_LENGTH) -> str:
     lines.append(current_text) # Add the remaining part
     return '\n'.join(lines)
 
+# --- Plotting Function ---
+
 def plot_radar_chart(
     plot_data: Dict[str, Dict[str, float]],
     selected_players: List[str],
@@ -310,7 +316,7 @@ def plot_radar_chart(
         text_color: Color for text elements (title, labels, legend).
         circle_color: Color for the radar grid lines and spokes.
         font_family: Font family to use for text.
-        save_path: If provided, saves the plot to this file path (e.g., 'chart.png').
+        save_path: If a file path string is provided, saves the plot to this path.
                    If None, displays the plot interactively.
     """
     num_vars = len(categories)
@@ -319,11 +325,9 @@ def plot_radar_chart(
         return
 
     # --- Data Preparation ---
-    # Replace any remaining NA_VALUE or non-numeric with 0 for plotting
-    # Also find max values *after* handling NA
+    # (Data preparation logic remains the same)
     stat_max_values: Dict[str, float] = {}
     numeric_plot_data: Dict[str, Dict[str, float]] = {}
-
     for category in categories:
         numeric_plot_data[category] = {}
         max_val_for_cat = 0.0
@@ -332,88 +336,74 @@ def plot_radar_chart(
             try:
                 num_value = float(value) if value != NA_VALUE else 0.0
             except (ValueError, TypeError):
-                num_value = 0.0 # Default to 0 if conversion fails unexpectedly
+                num_value = 0.0
             numeric_plot_data[category][player] = num_value
-            # Ensure max is only compared with valid numbers, handle negative stats if necessary
             if isinstance(num_value, (int, float)):
                  max_val_for_cat = max(max_val_for_cat, num_value)
+        stat_max_values[category] = max(max_val_for_cat * MAX_VALUE_SCALE_FACTOR, 0.01)
 
-        # Apply scaling factor. Handle case where max is 0 or negative.
-        stat_max_values[category] = max(max_val_for_cat * MAX_VALUE_SCALE_FACTOR, 0.01) # Avoid zero max
-
-
-    # Normalize the stats for the radar plot (0 to 1 range)
     normalized_player_stats: Dict[str, List[float]] = {}
     for player in selected_players:
         normalized_stats = []
         for category in categories:
             player_val = numeric_plot_data.get(category, {}).get(player, 0.0)
-            max_val = stat_max_values.get(category, 1.0) # Default max to 1 to avoid division by zero
+            max_val = stat_max_values.get(category, 1.0)
             normalized = player_val / max_val if max_val else 0.0
-            normalized_stats.append(max(0, min(normalized, 1))) # Clamp between 0 and 1
+            normalized_stats.append(max(0, min(normalized, 1)))
         normalized_player_stats[player] = normalized_stats
 
-
     # --- Plotting Setup ---
+    # (Plotting setup logic remains the same)
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    angles += angles[:1] # Close the circle
+    angles += angles[:1]
 
-    # Prepare stats lists for plotting (append first value to end)
     plot_values_closed: Dict[str, List[float]] = {}
     for player, stats in normalized_player_stats.items():
         plot_values_closed[player] = stats + stats[:1]
 
-    # Font properties
     try:
         font_prop = font_manager.FontProperties(family=font_family, size=10)
         title_font_prop = font_manager.FontProperties(family=font_family, size=16, weight='bold')
-        font_manager.findfont(font_prop) # Check if font is available
+        font_manager.findfont(font_prop)
     except ValueError:
         print(f"Warning: Font '{font_family}' not found. Using default sans-serif.")
         font_prop = font_manager.FontProperties(family='sans-serif', size=10)
         title_font_prop = font_manager.FontProperties(family='sans-serif', size=16, weight='bold')
 
-
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True)) # Slightly larger default size
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
 
-    # Plot grid and labels first
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(categories, fontproperties=font_prop, color=text_color)
-
-    # Set y-axis limits and remove default labels/ticks
     ax.set_ylim(0, 1)
-    ax.set_yticks(np.linspace(0.2, 1.0, 5)) # Example: 5 grid circles
-    ax.set_yticklabels([]) # Hide numeric labels on spokes
+    ax.set_yticks(np.linspace(0.2, 1.0, 5))
+    ax.set_yticklabels([])
 
-    # Style the grid lines
     ax.xaxis.grid(True, color=circle_color, linestyle='dashed', linewidth=0.8)
     ax.yaxis.grid(True, color=circle_color, linestyle='dashed', linewidth=0.8)
     ax.spines['polar'].set_color(circle_color)
     ax.spines['polar'].set_linewidth(1.5)
 
-    # Rotate labels for readability
     for label, angle_rad in zip(ax.get_xticklabels(), angles[:-1]):
         angle_deg = np.degrees(angle_rad)
-        if 0 < angle_deg < 180: # Top half
+        if 0 < angle_deg < 180:
             label.set_horizontalalignment('center')
             label.set_verticalalignment('bottom' if angle_deg != 90 else 'center')
             label.set_rotation(angle_deg if angle_deg < 90 else angle_deg -180)
-        elif 180 < angle_deg < 360: # Bottom half
+        elif 180 < angle_deg < 360:
              label.set_horizontalalignment('center')
              label.set_verticalalignment('top' if angle_deg != 270 else 'center')
              label.set_rotation(angle_deg-180 if angle_deg > 270 else angle_deg-180)
-        else: # 0 or 180 degrees
+        else:
             label.set_horizontalalignment('right' if angle_deg == 180 else 'left')
             label.set_verticalalignment('center')
             label.set_rotation(angle_deg)
 
-
     # --- Plot Player Data ---
+    # (Player plotting logic remains the same)
     player_colors = cm.rainbow(np.linspace(0, 1, len(selected_players)))
     alphas = np.linspace(0.1, 0.6, num_vars) if polygonal else [0.3] * len(selected_players)
-    # Ensure shuffle distance makes sense
     shuffle_distance = max(1, math.floor(num_vars / len(selected_players))) if len(selected_players) > 0 else 1
 
     for idx, player in enumerate(selected_players):
@@ -422,44 +412,47 @@ def plot_radar_chart(
         player_legend_label = f"{player}, {all_players_spans.get(player, 'N/A')}"
 
         if polygonal:
-            # Plot individual polygon segments with varying alpha
             current_alphas = np.roll(alphas, idx * shuffle_distance)
             for i in range(num_vars):
-                segment_angles = angles[i:i+2] + [0] # Angles for segment + center
-                segment_values = data_to_plot[i:i+2] + [0] # Values for segment + center
+                segment_angles = angles[i:i+2] + [0]
+                segment_values = data_to_plot[i:i+2] + [0]
                 ax.fill(segment_angles, segment_values, color=player_color, alpha=current_alphas[i])
         else:
-            # Standard fill for the whole area
-            ax.fill(angles, data_to_plot, color=player_color, alpha=alphas[idx % len(alphas)]) # Use modulo for safety
+            ax.fill(angles, data_to_plot, color=player_color, alpha=alphas[idx % len(alphas)])
 
-        # Plot the outline
         ax.plot(angles, data_to_plot, color=player_color, linewidth=2,
                 marker=PLOT_MARKER, markersize=6, markerfacecolor=player_color,
                 label=player_legend_label)
 
-
     # --- Title and Legend ---
+    # (Title and Legend logic remains the same)
     title_str = f"{title_prefix}:\n" if title_prefix else ""
     players_str = add_line_breaks(" vs. ".join(selected_players), line_length=TITLE_LINE_LENGTH)
     full_title = title_str + players_str
-    ax.set_title(full_title, fontproperties=title_font_prop, color=text_color, y=1.10) # Adjust y for spacing
+    ax.set_title(full_title, fontproperties=title_font_prop, color=text_color, y=1.10)
 
     legend = ax.legend(loc='lower right',
                        bbox_to_anchor=(LEGEND_X_OFFSET, LEGEND_Y_OFFSET),
                        facecolor=bg_color, framealpha=0.6, prop=font_prop)
     plt.setp(legend.get_texts(), color=text_color)
 
-
     # --- Display or Save ---
-    fig.tight_layout() # Adjust layout to prevent labels overlapping
+    fig.tight_layout()
 
+    # *** MODIFIED SAVING LOGIC ***
     if save_path:
+        # Ensure the directory exists before trying to save
+        output_dir = os.path.dirname(save_path)
+        if output_dir: # Check if directory part exists (might be empty if saving in current dir)
+            os.makedirs(output_dir, exist_ok=True) # Create directory if it doesn't exist
+
         try:
             plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor=bg_color, pad_inches=0.1)
             print(f"Chart saved to {save_path}")
         except Exception as e:
             print(f"Error saving chart to {save_path}: {e}")
     else:
+        # Only show plot if not saving
         plt.show()
 
     plt.close(fig) # Close the figure to free memory
@@ -468,7 +461,7 @@ def plot_radar_chart(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate radar charts for FBRef player comparisons from saved HTML.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter # Show defaults in help
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
         "html_file_base",
@@ -487,10 +480,21 @@ if __name__ == "__main__":
         "-s", "--stats", nargs='+', default=DEFAULT_STATS,
         help="List of stats (using the exact 'aria-label' from table headers) to plot."
     )
+    # *** MODIFIED ARGUMENTS FOR SAVING ***
     parser.add_argument(
         "-o", "--output", default=None,
-        help="Output file path for the plot image (e.g., plot.png). If omitted, displays the plot interactively."
+        help="Output file path for the plot image (e.g., 'plots/radar.png'). "
+             "If not specified, a default filename is generated in the output directory."
     )
+    parser.add_argument(
+        "--no-save", action="store_true",
+        help="Prevent saving the plot image (displays interactively instead)."
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default=DEFAULT_OUTPUT_DIR,
+        help="Default directory for saving plots if --output is not a full path or is omitted."
+    )
+    # --- End of Modified Arguments ---
     parser.add_argument(
         "--title", default=None,
         help="Custom title prefix for the plot (e.g., 'UCL 2018+')."
@@ -518,6 +522,26 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # --- Determine Save Path ---
+    save_plot = not args.no_save
+    final_save_path: Optional[str] = None
+
+    if save_plot:
+        output_dir = args.output_dir
+        if args.output:
+            # User specified an output file/path
+            if os.path.dirname(args.output): # Check if it includes a directory path
+                final_save_path = args.output # Use the full path provided
+            else: # Just a filename was given
+                final_save_path = os.path.join(output_dir, args.output) # Combine with default/specified dir
+        else:
+            # Generate default filename
+            date_str = datetime.now().strftime("%Y%m%d_%H%M")
+            # Sanitize html file base name for use in filename
+            safe_html_base = "".join(c for c in args.html_file_base if c.isalnum() or c in ('-', '_')).rstrip()
+            filename = f"{safe_html_base}-radar-{date_str}.png"
+            final_save_path = os.path.join(output_dir, filename)
+
     # --- Data Loading and Processing ---
     try:
         html_content = load_html_file(args.htmldir, args.html_file_base)
@@ -528,7 +552,7 @@ if __name__ == "__main__":
             print("Error: No players extracted from the HTML. Exiting.")
             exit(1)
 
-        # Determine selected players
+        # Determine selected players (same logic as before)
         if args.players:
             selected_players = []
             found_players = set(all_players_spans.keys())
@@ -546,15 +570,13 @@ if __name__ == "__main__":
         print(f"Selected players for comparison: {', '.join(selected_players)}")
         print(f"Using stats: {', '.join(args.stats)}")
 
-        # Extract raw stats
+        # Extract raw stats (same logic as before)
         raw_player_stats: Dict[str, Dict[str, str]] = {}
-        stat_aria_labels_used = args.stats # Store the original aria-labels
+        stat_aria_labels_used = args.stats
         try:
             for stat_label in stat_aria_labels_used:
                 data_stat = get_data_stat(soup, stat_label)
                 raw_player_stats[stat_label] = extract_stat(soup, data_stat, selected_players)
-
-            # Get 90s played stat
             nineties_data_stat = get_data_stat(soup, '90s Played')
             nineties_played = extract_stat(soup, nineties_data_stat, selected_players)
         except ValueError as e:
@@ -562,20 +584,20 @@ if __name__ == "__main__":
             print("Please ensure the stat 'aria-label' names provided match the HTML source exactly.")
             exit(1)
 
-        # Adjust stats for per 90
+        # Adjust stats for per 90 (same logic as before)
         adjusted_player_stats = adjust_stats_by_nineties(raw_player_stats, nineties_played)
 
-        # Prepare final data dictionary and category list for plotting
+        # Prepare final data dictionary and category list for plotting (same logic as before)
         final_plot_data: Dict[str, Dict[str, float]] = {}
         plot_categories_final: List[str] = []
         for stat_label in stat_aria_labels_used:
              key_per90 = stat_label + PER_90_SUFFIX
              if key_per90 in adjusted_player_stats:
                  final_plot_data[key_per90] = adjusted_player_stats[key_per90]
-                 plot_categories_final.append(key_per90) # Use the adjusted key as category label
+                 plot_categories_final.append(key_per90)
              elif stat_label in adjusted_player_stats:
                  final_plot_data[stat_label] = adjusted_player_stats[stat_label]
-                 plot_categories_final.append(stat_label) # Use original key
+                 plot_categories_final.append(stat_label)
              else:
                  print(f"Warning: Stat '{stat_label}' (or its /90 version) was not found in adjusted stats and will be skipped.")
 
@@ -595,7 +617,7 @@ if __name__ == "__main__":
             text_color=args.textcolor,
             circle_color=args.circlecolor,
             font_family=args.font,
-            save_path=args.output
+            save_path=final_save_path # Pass the determined save path (or None)
         )
 
         print("Script finished.")
@@ -607,7 +629,6 @@ if __name__ == "__main__":
         print(e)
         exit(1)
     except Exception as e:
-        # Catch other potential errors during processing/plotting
         print(f"An unexpected error occurred: {e}")
         import traceback
         traceback.print_exc()
