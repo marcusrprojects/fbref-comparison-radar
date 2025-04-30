@@ -6,24 +6,19 @@
 
 ## Overview
 
-This project provides a Python script (`multi_player_radar.py`) to parse saved HTML files from [FBRef.com](https://fbref.com/)'s player comparison tool and generate customizable radar (spider) charts. It extracts specified statistics for selected players, calculates per 90-minute values where appropriate, and visualizes the comparison using `matplotlib`. The script offers command-line options for selecting players, stats, time periods, and customizing plot aesthetics.
+This Python CLI tool (`multi_player_radar.py`) parses saved player comparison pages from [FBRef.com](https://fbref.com/) and generates radar (spider) charts visualizing selected footballers across performance metrics. It supports per-90-minute adjustments, customizable output, and clean visualizations using `matplotlib`.
 
 ## Features
 
-*   Parses player statistics from user-saved FBRef Player Comparison HTML pages.
-*   Compares multiple players based on user-selected statistics.
-*   Automatically calculates per 90-minute stats for relevant metrics.
-*   Generates informative radar charts visualizing player profiles across chosen stats.
-*   Highly customizable plot aesthetics:
-    *   Background, text, and grid colors.
-    *   Optional polygonal fill style.
-    *   Customizable font family.
-*   Command-line interface for flexible usage:
-    *   Specify HTML input file.
-    *   Select specific players to include.
-    *   Choose which statistics (`aria-label`s) to plot.
-    *   Add a custom title prefix.
-    *   Save the plot to a specified file (PNG format).
+- Parses saved FBRef player comparison HTML pages.
+- Compares multiple players on selected stats.
+- Calculates per-90-minute values for most metrics.
+- Highly customizable radar chart output:
+  - Dark/light themes
+  - Optional polygonal fill style
+  - Adjustable font, text color, and title
+- Saves plot as a PNG (optional).
+- Works via CLI with flexible arguments.
 
 ## Example Output
 
@@ -31,73 +26,68 @@ This project provides a Python script (`multi_player_radar.py`) to parse saved H
 
 ## Setup and Installation
 
-1.  **Clone the repository:**
+1. Clone this repository:
     ```bash
     git clone https://github.com/your-username/your-repo-name.git
     cd your-repo-name
     ```
-2.  **Create and activate a virtual environment (recommended):**
+
+2. (Optional) Create a virtual environment:
     ```bash
-    # Create environment
     python3 -m venv venv
-
-    # Activate (Linux/macOS)
-    source venv/bin/activate
-
-    # Activate (Windows CMD)
-    # venv\Scripts\activate.bat
-
-    # Activate (Windows PowerShell)
-    # .\venv\Scripts\Activate.ps1
+    source venv/bin/activate  # On Windows use venv\Scripts\activate
     ```
-3.  **Install dependencies:**
+
+3. Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
-4.  **Prepare HTML Data:**
-    *   Navigate to the "Player Comparison" tool on [FBRef.com](https://fbref.com/).
-    *   Select the players and season(s) you want to compare.
-    *   Once the comparison table is displayed, save the **complete HTML page** using your browser (e.g., `File -> Save Page As... -> Webpage, Complete`).
-    *   Place these saved `.html` files into a directory. The script defaults to looking in `./htmls/` (create this directory if it doesn't exist).
+
+4. Save your FBRef HTML file:
+    - Go to FBRef's [Player Comparison](https://fbref.com/) page.
+    - Select players and comparison table.
+    - Save the **complete HTML page** in `./htmls/`.
 
 ## Usage
 
-Run the script (`multi_player_radar.py`) from your terminal within the activated virtual environment.
-
-**Basic Usage (using default stats from 'my_comparison.html' in './htmls/'):**
+Basic usage:
 ```bash
-python multi_player_radar.py my_comparison
-```
-(Note: Only provide the base filename, without .html)
-
-**Specify Players, Stats, Output File, and Title:**
-```bash
-python multi_player_radar.py chiesa-rashford-kvara-sancho \
-    --players "Chiesa Federico" "Rashford Marcus" "Kvaratskhelia Khvicha" \
-    --stats "npxG + xAG" "Progressive Passes" "Successful Take-Ons" "Goals/Shot" "Shot-Creating Actions" "Total Carrying Distance" \
-    --output winger_comparison.png \
-    --title "Winger Comparison 2018+"
-```
-(Ensure player names match the csk attribute and stat names match the aria-label in the HTML source)
-
-**Specify HTML Directory:**
-```bash
-python multi_player_radar.py my_comparison --htmldir path/to/my/html_files
+python multi_player_radar.py t3-17-24
 ```
 
-**View All Options:**
+With custom player list:
+```bash
+python multi_player_radar.py t3-17-24 \
+    --players "Sancho Jadon" "Chiesa Federico"
+```
+
+With output and title:
+```bash
+python multi_player_radar.py t3-17-24 \
+    --save --output-dir mycharts \
+    --title "Top Wingers"
+```
+
+Enable polygonal fill style:
+```bash
+python multi_player_radar.py t3-17-24 --polygonal
+```
+
+See full options:
 ```bash
 python multi_player_radar.py --help
 ```
 
 ## Files
-- `multi_player_radar.py`: The main Python script for parsing and plotting.
-- `requirements.txt`: Lists the necessary Python packages.
-- `README.md`: This documentation file.
-- `htmls/` (Example directory): Place your saved FBRef HTML files here by default.
-- `output/` or `data_viz/` (Example directory): A potential location to save generated plots (consider adding this to .gitignore).
+
+- `multi_player_radar.py`: The radar chart generator script.
+- `htmls/`: Place your FBRef HTML files here.
+- `data_viz/`: Default directory for saved plots.
+- `requirements.txt`: Python dependencies.
+- `README.md`: Project documentation.
 
 ## Dependencies
+
 - Python 3.8+
 - Beautiful Soup 4 (`beautifulsoup4`)
 - NumPy (`numpy`)
