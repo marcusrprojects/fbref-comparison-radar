@@ -6,6 +6,8 @@ from matplotlib import cm
 import argparse
 import math
 import sys
+import os
+from datetime import datetime
 
 def load_html_file(path_to_file):
     try:
@@ -86,7 +88,7 @@ def add_line_breaks(players_string, line_length=70):
     lines.append(players_string)
     return '\n'.join(lines)
 
-def plot_radar_chart(adjusted_stats, selected_players, titleStart=None, polygonal=True, bg='white', text_color='black', circle_color='black', save=False, legendXOffset=.5, legendYOffset=-.3, plotMarker='o', fontFamily='Helvetica'):
+def plot_radar_chart(adjusted_stats, selected_players, titleStart=None, polygonal=True, bg='white', text_color='black', circle_color='black', save=False, save_path=None, legendXOffset=.5, legendYOffset=-.3, plotMarker='o', fontFamily='Helvetica'):    
     stat_max_values = {stat: max(float(adjusted_stats[stat][player]) for player in selected_players) * 1.07 for stat in adjusted_stats}
     categories = list(adjusted_stats.keys())
     player_stats = {}
@@ -142,39 +144,40 @@ def plot_radar_chart(adjusted_stats, selected_players, titleStart=None, polygona
     legend = ax.legend(loc='lower right', bbox_to_anchor=(legendXOffset, legendYOffset), facecolor=bg, framealpha=0.5, prop=font_properties)
     plt.setp(legend.get_texts(), color=text_color)
     fig.subplots_adjust(left=0.15, right=0.85)
-    if save:
-        plt.savefig(f'./data_viz/{path_to_file}.png', dpi=300, bbox_inches='tight', pad_inches=0.1)
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight', pad_inches=0.1)
     plt.show()
 
 def main():
     parser = argparse.ArgumentParser(description="Generate radar chart for selected football players.")
-    parser.add_argument("filename", help="HTML file (without extension) located in ./htmls/")
-    parser.add_argument("--players", nargs="+", help="List of player names to include (optional)")
-    parser.add_argument("--save", action="store_true", help="Save chart to PNG instead of displaying only")
+    parser.add_argument("filename", help="HTML filename without extension (must be in ./htmls/)")
+    parser.add_argument("--players", nargs="+", help="List of player names (exact match)")
+    parser.add_argument("--save", action="store_true", help="Save the plot")
+    parser.add_argument("--output", help="Output filename (optional)")
+    parser.add_argument("--output-dir", default="data_viz", help="Directory to save output file")
+    parser.add_argument("--title", type=str, default="UCL 2018+", help="Title prefix for the plot")
+    parser.add_argument("--polygonal", action="store_true", default=False, help="Use polygonal fill styling (default: off)")    
     args = parser.parse_args()
 
-    global path_to_file
-    path_to_file = args.filename
-
-    html_content = load_html_file(path_to_file)
+    html_content = load_html_file(args.filename)
     soup = BeautifulSoup(html_content, 'html.parser')
-    players_and_spans = extract_players_and_spans(soup)
-    all_players = list(players_and_spans.keys())
-    print(f"Found the following players and span: {players_and_spans}")
+    players_spans = extract_players_and_spans(soup)
+    all_players = list(players_spans.keys())
 
     if args.players:
         selected_players = [p for p in all_players if p in args.players]
         missing = [p for p in args.players if p not in all_players]
         if missing:
-            print(f"Warning: These players were not found and skipped: {missing}")
+            print(f"Warning: Skipped players not found: {missing}")
     else:
         selected_players = all_players
 
     if not selected_players:
-        print("No players selected. Exiting.")
-        sys.exit(0)
+        print("No valid players selected. Exiting.")
+        sys.exit(1)
 
-    print(f"Selected players for comparison: {selected_players}")
+    print(f"Selected players: {selected_players}")
 
     stats = ['npxG + xAG', 'Progressive Passes', 'Successful Take-Ons',
              'Goals/Shot', 'Shot-Creating Actions', 'Total Carrying Distance']
@@ -184,19 +187,36 @@ def main():
         data_stat = get_data_stat(soup, stat)
         all_player_stats[stat] = extract_stat(soup, data_stat, selected_players)
 
-    ninetiesPlayed = extract_stat(soup, get_data_stat(soup, '90s Played'), selected_players)
-    print("90s Played:", ninetiesPlayed)
+    nineties = extract_stat(soup, get_data_stat(soup, '90s Played'), selected_players)
 
-    adjusted_stats = adjust_stats_by_nineties(all_player_stats, ninetiesPlayed)
+    adjusted = adjust_stats_by_nineties(all_player_stats, nineties)
+
+    # --- Determine Save Path ---
+    save_plot = args.save
+    final_save_path = None
+
+    if save_plot:
+        os.makedirs(args.output_dir, exist_ok=True)
+        if args.output:
+            if os.path.dirname(args.output):
+                final_save_path = args.output
+            else:
+                final_save_path = os.path.join(args.output_dir, args.output)
+        else:
+            date_str = datetime.now().strftime("%Y%m%d_%H%M")
+            safe_name = ''.join(c for c in args.filename if c.isalnum() or c in ('-', '_')).rstrip()
+            filename = f"{safe_name}-radar-{date_str}.png"
+            final_save_path = os.path.join(args.output_dir, filename)
 
     plot_radar_chart(
-        adjusted_stats,
-        selected_players,
-        titleStart="UCL 2018+",
-        circle_color='white',
-        bg='#2C2C2C',
-        text_color='white',
-        save=args.save
+        adjusted_stats=adjusted,
+        selected_players=selected_players,
+        titleStart=args.title,
+        polygonal=args.polygonal,
+        bg="#2C2C2C",
+        text_color="white",
+        circle_color="white",
+        save_path=final_save_path
     )
 
 if __name__ == "__main__":
