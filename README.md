@@ -92,3 +92,9 @@ python multi_player_radar.py --help
 - Beautiful Soup 4 (`beautifulsoup4`)
 - NumPy (`numpy`)
 - Matplotlib (`matplotlib`)
+
+## Disclaimer
+
+This tool is intended for personal and educational use only. It does **not** scrape or interact with FBRef.com or its servers in any way.
+
+Users must manually download HTML files from [FBRef](https://fbref.com/) and use them locally. Please ensure you comply with [FBRef's Terms of Use](https://www.sports-reference.com/termsofuse.html) or any applicable data policies when using this tool.
