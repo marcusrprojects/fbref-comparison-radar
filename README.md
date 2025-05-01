@@ -22,7 +22,7 @@ This Python CLI tool (`multi_player_radar.py`) parses saved player comparison pa
 
 ## Example Output
 
-![UCL - Messi, CR7, Neymar Radar Chart](./data_viz/t3-17-24-radar-20250430_1401.png)
+![UCL - Messi, CR7, Neymar Radar Chart](./examples/t3-17-23-radar-20250430_193926.png)
 
 ## Setup and Installation
 
