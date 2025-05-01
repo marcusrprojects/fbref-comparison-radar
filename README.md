@@ -4,12 +4,10 @@
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 ![Libraries](https://img.shields.io/badge/Libraries-BeautifulSoup4%20|%20NumPy%20|%20Matplotlib-orange.svg)
 
-## Overview
-
+## Description
 This project provides a Python script (`multi_player_radar.py`) to generate customizable radar (spider) charts from saved HTML files from [FBRef.com](https://fbref.com/)'s player comparison tool. It extracts relevant statistics, computes per 90-minute values, and visualizes comparisons between players using `matplotlib`.
 
-> ⚠️ **Disclaimer**: This tool is intended for personal and educational use only. It does **not** scrape FBRef.com or interact with their servers.  
-> Users must manually download HTML files from [FBRef](https://fbref.com/) and use them locally. Please ensure you comply with [FBRef's Terms of Use](https://www.sports-reference.com/termsofuse.html) or any applicable data policies when using this tool.
+> ⚠️ **Disclaimer**: This tool is for personal and educational use only. It does **not** scrape FBRef.com or interact with their servers. Users must manually download HTML files and use them locally. Please ensure you comply with [FBRef's Terms of Use](https://www.sports-reference.com/termsofuse.html).
 
 ## Features
 
@@ -86,14 +84,20 @@ python multi_player_radar.py --help
 
 - `multi_player_radar.py` — Main script
 - `requirements.txt` — Dependencies
-- `README.md` — Documentation
-- `htmls/` — Place your downloaded HTML files here
-- `data_viz/` — Default output directory
-- `examples/` — Example image(s) for README
+- `README.md` — Project documentation
+- `htmls/` — Your downloaded FBRef HTML files
+- `data_viz/` — Output images
+- `examples/` — Example radar charts
 
 ## Dependencies
 
 - Python 3.8+
-- BeautifulSoup4
-- NumPy
-- Matplotlib
+- beautifulsoup4>=4.9.0
+- numpy>=1.18.0
+- matplotlib>=3.3.0
+
+## Contributing
+
+Contributions are welcome! Feel free to fork this repo and submit a pull request.
+
+---
