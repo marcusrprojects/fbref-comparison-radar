@@ -24,7 +24,7 @@ This project provides a Python script (`multi_player_radar.py`) to generate cust
 
 ## Example Output
 
-![Example Radar Chart](examples/example_chart.png)
+![UCL - Messi, CR7, Neymar Radar Chart](./examples/Messi_CR7_Neymar.png)
 
 ## Setup and Installation
 
