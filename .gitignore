@@ -2,3 +2,5 @@
 .DS_Store
 archives/
 /venv
+/data_viz
+/htmls
