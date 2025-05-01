@@ -320,8 +320,8 @@ def main() -> None:
     # Determine theme colors
     if args.theme == 'dark':
         bg_color, text_color, circle_color = "#2C2C2C", "white", "gray"
-    else: # light theme
-        bg_color, text_color, circle_color = "#F5F5F5", "black", "#C0C0C0" # Light gray circles
+    else:
+        bg_color, text_color, circle_color = "#F5F5F5", "black", "gray"
 
     # Sanitize filename
     safe_name = ''.join(c for c in args.filename if c.isalnum() or c in ('-', '_')).rstrip()
